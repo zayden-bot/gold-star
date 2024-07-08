@@ -15,9 +15,9 @@ use super::GoldStarCommand;
 const HOURS_24: i64 = 86400;
 
 pub struct GiveStarResponse {
-    target_user: UserId,
-    target_user_stars: i32,
-    reason: Option<String>,
+    pub target_user: UserId,
+    pub target_user_stars: i32,
+    pub reason: Option<String>,
 }
 
 pub struct GiveStar;
