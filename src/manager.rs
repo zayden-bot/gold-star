@@ -28,7 +28,7 @@ impl GoldStarRow {
             number_of_stars: 0,
             given_stars: 0,
             received_stars: 0,
-            last_free_star: NaiveDateTime::MIN,
+            last_free_star: NaiveDateTime::UNIX_EPOCH,
         }
     }
 
