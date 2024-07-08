@@ -1,9 +1,9 @@
 use commands::{GiveStar, GoldStarCommand, Stars};
 use serenity::all::CreateCommand;
 
-mod commands;
-mod error;
-mod manager;
+pub mod commands;
+pub mod error;
+pub mod manager;
 
 pub use error::{Error, Result};
 
