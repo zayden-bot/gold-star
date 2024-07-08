@@ -1,0 +1,17 @@
+[package]
+name = "gold_star"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+zayden-core = { git = "https://github.com/zayden-bot/slash-command-core.git", branch = "master" }
+async-trait = { version = "*", default-features = false }
+chrono = { version = "*", default-features = false, features = ["now"] }
+sqlx = { version = "*", default-features = false, features = ["macros"] }
+
+[dependencies.serenity]
+git = "https://github.com/serenity-rs/serenity"
+branch = "current"
+# version = "*"
+default-features = false
+features = ["rustls_backend", "builder", "client", "gateway", "model"]
