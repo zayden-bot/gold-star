@@ -79,7 +79,7 @@ impl GoldStarCommand<GiveStarResponse> for GiveStar {
     }
 
     fn register() -> CreateCommand {
-        CreateCommand::new("gold_star")
+        CreateCommand::new("give_star")
             .description("Give a user a star")
             .add_option(
                 CreateCommandOption::new(
