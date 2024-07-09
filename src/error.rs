@@ -24,12 +24,16 @@ impl ErrorResponse for Error {
     fn to_response(&self) -> String {
         match self {
             Self::SelfStar => "You can't give yourself a star.".to_string(),
-            Self::NoStars(t) => format!(
-                "You don't have any stars to give.\nNext free star in: {}:{}:{}.",
-                t.as_secs() / SECS_PER_HOUR,
-                t.as_secs() / SECS_PER_MINUTE,
-                t.as_secs()
-            ),
+            Self::NoStars(t) => {
+                let hours = t.as_secs() / SECS_PER_HOUR;
+                let minutes = (t.as_secs() % SECS_PER_HOUR) / SECS_PER_MINUTE;
+                let seconds = t.as_secs() % SECS_PER_MINUTE;
+
+                format!(
+                    "You don't have any stars to give.\nNext free star in: {}:{}:{}.",
+                    hours, minutes, seconds
+                )
+            }
             _ => String::new(),
         }
     }
