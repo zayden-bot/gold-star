@@ -5,6 +5,7 @@ use serenity::all::{
     UserId,
 };
 use sqlx::{Database, Pool};
+use std::time::Duration;
 use zayden_core::parse_options;
 
 use crate::manager::GoldStarRow;
@@ -49,11 +50,13 @@ impl GoldStarCommand<GiveStarResponse> for GiveStar {
             None => GoldStarRow::new(target_user.id),
         };
 
-        let free_star =
-            author_row.last_free_star.and_utc().timestamp() + HOURS_24 <= Utc::now().timestamp();
+        let next_free_star =
+            author_row.last_free_star.and_utc().timestamp() + HOURS_24 - Utc::now().timestamp();
+
+        let free_star = next_free_star <= 0;
 
         if author_row.number_of_stars < 1 && !free_star {
-            return Err(Error::NoStars);
+            return Err(Error::NoStars(Duration::from_secs(next_free_star as u64)));
         }
 
         if free_star {
