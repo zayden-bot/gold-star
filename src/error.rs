@@ -30,7 +30,7 @@ impl ErrorResponse for Error {
                 let seconds = t.as_secs() % SECS_PER_MINUTE;
 
                 format!(
-                    "You don't have any stars to give.\nNext free star in: {}:{}:{}.",
+                    "You don't have any stars to give.\nNext free star in: {}h {}m {}s.",
                     hours, minutes, seconds
                 )
             }
