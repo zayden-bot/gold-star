@@ -10,8 +10,6 @@ chrono = { version = "*", default-features = false, features = ["now"] }
 sqlx = { version = "*", default-features = false, features = ["macros"] }
 
 [dependencies.serenity]
-git = "https://github.com/serenity-rs/serenity"
-branch = "current"
-# version = "*"
+version = "*"
 default-features = false
 features = ["rustls_backend", "builder", "client", "gateway", "model"]
