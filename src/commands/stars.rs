@@ -1,42 +1,51 @@
-use async_trait::async_trait;
 use serenity::all::{
-    CommandInteraction, CommandOptionType, CreateCommand, CreateCommandOption, ResolvedValue,
+    CommandInteraction, CommandOptionType, Context, CreateCommand, CreateCommandOption,
+    CreateEmbed, EditInteractionResponse, ResolvedValue,
 };
 use sqlx::{Database, Pool};
 use zayden_core::parse_options;
 
-use crate::manager::{GoldStarManager, GoldStarRow};
-use crate::Result;
+use crate::{GoldStarManager, GoldStarRow, Result, Stars};
 
-use super::GoldStarCommand;
-
-pub struct Stars;
-
-#[async_trait]
-impl GoldStarCommand<(String, GoldStarRow)> for Stars {
-    async fn run<Db: Database, Manager: GoldStarManager<Db>>(
+impl Stars {
+    pub async fn run<Db: Database, Manager: GoldStarManager<Db>>(
+        ctx: &Context,
         interaction: &CommandInteraction,
         pool: &Pool<Db>,
-    ) -> Result<(String, GoldStarRow)> {
+    ) -> Result<()> {
         let options = interaction.data.options();
-        let options = parse_options(&options);
+        let mut options = parse_options(options);
 
-        let user = match options.get("user") {
-            Some(ResolvedValue::User(user, _)) => *user,
+        let user = match options.remove("user") {
+            Some(ResolvedValue::User(user, _)) => user,
             _ => &interaction.user,
         };
 
-        let row = match Manager::get_row(pool, user.id).await? {
+        let row = match Manager::get_row(pool, user.id).await.unwrap() {
             Some(row) => row,
             None => GoldStarRow::new(user.id),
         };
 
         let username = user.global_name.as_deref().unwrap_or(&user.name);
 
-        Ok((username.to_string(), row))
+        interaction
+            .edit_response(
+                ctx,
+                EditInteractionResponse::new().embed(
+                    CreateEmbed::new()
+                        .title(format!("{}'s Stars", username))
+                        .field("Number of Stars", row.number_of_stars.to_string(), true)
+                        .field("Given Stars", row.given_stars.to_string(), true)
+                        .field("Received Stars", row.received_stars.to_string(), true),
+                ),
+            )
+            .await
+            .unwrap();
+
+        Ok(())
     }
 
-    fn register() -> CreateCommand {
+    pub fn register() -> CreateCommand {
         CreateCommand::new("stars")
             .description("Get the number of stars a user has.")
             .add_option(

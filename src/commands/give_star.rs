@@ -1,39 +1,29 @@
-use async_trait::async_trait;
 use chrono::Utc;
 use serenity::all::{
-    CommandInteraction, CommandOptionType, CreateCommand, CreateCommandOption, ResolvedValue,
-    UserId,
+    CommandInteraction, CommandOptionType, Context, CreateCommand, CreateCommandOption,
+    CreateEmbed, EditInteractionResponse, Mentionable, ResolvedValue,
 };
 use sqlx::{Database, Pool};
 use std::time::Duration;
 use zayden_core::parse_options;
 
 use crate::manager::GoldStarRow;
-use crate::{error::Result, manager::GoldStarManager, Error};
-
-use super::GoldStarCommand;
+use crate::GiveStar;
+use crate::{Error, GoldStarManager, Result};
 
 const HOURS_24: i64 = 86400;
 
-pub struct GiveStarResponse {
-    pub target_user: UserId,
-    pub target_user_stars: i32,
-    pub reason: Option<String>,
-}
-
-pub struct GiveStar;
-
-#[async_trait]
-impl GoldStarCommand<GiveStarResponse> for GiveStar {
-    async fn run<Db: Database, Manager: GoldStarManager<Db>>(
+impl GiveStar {
+    pub async fn run<Db: Database, Manager: GoldStarManager<Db>>(
+        ctx: &Context,
         interaction: &CommandInteraction,
         pool: &Pool<Db>,
-    ) -> Result<GiveStarResponse> {
+    ) -> Result<()> {
         let options = interaction.data.options();
-        let options = parse_options(&options);
+        let mut options = parse_options(options);
 
-        let target_user = match options.get("member") {
-            Some(ResolvedValue::User(user, _)) => *user,
+        let target_user = match options.remove("member") {
+            Some(ResolvedValue::User(user, _)) => user,
             _ => unreachable!("User option is required"),
         };
 
@@ -41,11 +31,11 @@ impl GoldStarCommand<GiveStarResponse> for GiveStar {
             return Err(Error::SelfStar);
         }
 
-        let mut author_row = match Manager::get_row(pool, interaction.user.id).await? {
+        let mut author_row = match Manager::get_row(pool, interaction.user.id).await.unwrap() {
             Some(stars) => stars,
             None => GoldStarRow::new(interaction.user.id),
         };
-        let mut target_row = match Manager::get_row(pool, target_user.id).await? {
+        let mut target_row = match Manager::get_row(pool, target_user.id).await.unwrap() {
             Some(stars) => stars,
             None => GoldStarRow::new(target_user.id),
         };
@@ -56,7 +46,7 @@ impl GoldStarCommand<GiveStarResponse> for GiveStar {
         let free_star = next_free_star <= 0;
 
         if author_row.number_of_stars < 1 && !free_star {
-            return Err(Error::NoStars(Duration::from_secs(next_free_star as u64)));
+            return Err(Error::no_stars(Duration::from_secs(next_free_star as u64)));
         }
 
         if free_star {
@@ -65,23 +55,36 @@ impl GoldStarCommand<GiveStarResponse> for GiveStar {
             author_row.give_star(&mut target_row);
         }
 
-        author_row.save::<Db, Manager>(pool).await?;
-        target_row.save::<Db, Manager>(pool).await?;
+        author_row.save::<Db, Manager>(pool).await.unwrap();
+        target_row.save::<Db, Manager>(pool).await.unwrap();
 
-        let reason = if let Some(ResolvedValue::String(r)) = options.get("reason") {
-            Some(r.to_string())
-        } else {
-            None
-        };
+        let mut description = format!(
+            "{} received a golden star from {} for a total of **{}** stars.",
+            target_user.mention(),
+            interaction.user.mention(),
+            target_row.number_of_stars
+        );
 
-        Ok(GiveStarResponse {
-            target_user: target_user.id,
-            target_user_stars: target_row.number_of_stars,
-            reason,
-        })
+        if let Some(ResolvedValue::String(reason)) = options.remove("reason") {
+            description.push_str(&format!("\nReason: {}", reason));
+        }
+
+        interaction
+            .edit_response(
+                ctx,
+                EditInteractionResponse::new().embed(
+                    CreateEmbed::new()
+                        .title("⭐ NEW GOLDEN STAR ⭐")
+                        .description(description),
+                ),
+            )
+            .await
+            .unwrap();
+
+        Ok(())
     }
 
-    fn register() -> CreateCommand {
+    pub fn register() -> CreateCommand {
         CreateCommand::new("give_star")
             .description("Give a user a star")
             .add_option(
