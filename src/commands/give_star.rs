@@ -1,7 +1,7 @@
 use chrono::Utc;
 use serenity::all::{
     CommandInteraction, CommandOptionType, Context, CreateCommand, CreateCommandOption,
-    CreateEmbed, EditInteractionResponse, Mentionable, ResolvedValue,
+    CreateEmbed, EditInteractionResponse, Mentionable, ResolvedOption, ResolvedValue,
 };
 use sqlx::{Database, Pool};
 use std::time::Duration;
@@ -17,9 +17,9 @@ impl GiveStar {
     pub async fn run<Db: Database, Manager: GoldStarManager<Db>>(
         ctx: &Context,
         interaction: &CommandInteraction,
+        options: Vec<ResolvedOption<'_>>,
         pool: &Pool<Db>,
     ) -> Result<()> {
-        let options = interaction.data.options();
         let mut options = parse_options(options);
 
         let target_user = match options.remove("member") {

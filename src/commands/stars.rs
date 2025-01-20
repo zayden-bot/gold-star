@@ -1,6 +1,6 @@
 use serenity::all::{
     CommandInteraction, CommandOptionType, Context, CreateCommand, CreateCommandOption,
-    CreateEmbed, EditInteractionResponse, ResolvedValue,
+    CreateEmbed, EditInteractionResponse, ResolvedOption, ResolvedValue,
 };
 use sqlx::{Database, Pool};
 use zayden_core::parse_options;
@@ -11,9 +11,9 @@ impl Stars {
     pub async fn run<Db: Database, Manager: GoldStarManager<Db>>(
         ctx: &Context,
         interaction: &CommandInteraction,
+        options: Vec<ResolvedOption<'_>>,
         pool: &Pool<Db>,
     ) -> Result<()> {
-        let options = interaction.data.options();
         let mut options = parse_options(options);
 
         let user = match options.remove("user") {
